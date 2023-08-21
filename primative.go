@@ -29,21 +29,11 @@ func (geo *Geometry) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	var rawMessageForType string
-	// var rawMessageForBbox string
 	if len(objMap) != 0 {
 		err = json.Unmarshal(*objMap["type"], &rawMessageForType)
 		if err != nil {
 			return err
 		}
-
-        // if *objMap["bbox"] != nil {
-        //     err = json.Unmarshal(*objMap["bbox"], &rawMessageForBbox)
-        //     if err != nil {
-        //         return err
-        //     }
-        // } else {
-        //     geo.BBox = nil
-        // }
 
 		switch rawMessageForType {
         case "Point":
@@ -110,41 +100,41 @@ func (geo *Geometry) UnmarshalJSON(b []byte) error {
 }
 
 type GeoType interface {
-    GetType() GeometryType
+    GetType() string
 }
 
 type Point [2]float64
 
-func (p Point) GetType() GeometryType {
-	return TPoint
+func (p Point) GetType() string {
+	return string(TPoint)
 }
 
 type LineString [][2]float64
 
-func (p LineString) GetType() GeometryType {
-	return TLineString
+func (p LineString) GetType() string {
+	return string(TLineString)
 }
 
 type Polygon [][][2]float64 
 
-func (p Polygon) GetType() GeometryType {
-	return TPolygon
+func (p Polygon) GetType() string {
+	return string(TPolygon)
 }
 
 type MultiPoint [][2]float64
 
-func (p MultiPoint) GetType() GeometryType {
-	return TMultiPoint
+func (p MultiPoint) GetType() string {
+	return string(TMultiPoint)
 }
 
 type MultiLineString [][][2]float64
 
-func (p MultiLineString) GetType() GeometryType {
-	return TMultiLineString
+func (p MultiLineString) GetType() string {
+	return string(TMultiLineString)
 }
 
 type MultiPolygon [][][][2]float64
 
-func (p MultiPolygon) GetType() GeometryType {
-	return TMultiPolygon
+func (p MultiPolygon) GetType() string {
+	return string(TMultiPolygon)
 }
