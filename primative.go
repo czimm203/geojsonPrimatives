@@ -1,4 +1,4 @@
-package primative 
+package primative
 
 import (
 	"encoding/json"
@@ -16,10 +16,10 @@ const (
 )
 
 type Geometry struct {
-	Type        GeometryType  `json:"type"`
-	Coordinates GeoType       `json:"coordinates"`
-    BBox        []float64    `json:"bbox,omitempty"`
-    CCRS        string        `json:"ccrs,omitempty"`
+	Type        GeometryType `json:"type"`
+	Coordinates GeoType      `json:"coordinates"`
+	BBox        []float64    `json:"bbox,omitempty"`
+	CCRS        string       `json:"ccrs,omitempty"`
 }
 
 func (geo *Geometry) UnmarshalJSON(b []byte) error {
@@ -36,16 +36,16 @@ func (geo *Geometry) UnmarshalJSON(b []byte) error {
 		}
 
 		switch rawMessageForType {
-        case "Point":
+		case "Point":
 			var ph Point
 			err = json.Unmarshal(*objMap["coordinates"], &ph)
 			if err != nil {
 				return err
 			}
-			geo.Type = TPoint 
+			geo.Type = TPoint
 			geo.Coordinates = ph
 
-        case "LineString":
+		case "LineString":
 			var ph LineString
 			err = json.Unmarshal(*objMap["coordinates"], &ph)
 			if err != nil {
@@ -81,7 +81,6 @@ func (geo *Geometry) UnmarshalJSON(b []byte) error {
 			geo.Type = TMultiLineString
 			geo.Coordinates = ph
 
-
 		case "MultiPolygon":
 			var ph MultiPolygon
 			err = json.Unmarshal(*objMap["coordinates"], &ph)
@@ -90,7 +89,7 @@ func (geo *Geometry) UnmarshalJSON(b []byte) error {
 			}
 			geo.Type = "MultiPolygon"
 			geo.Coordinates = ph
-                        
+
 		default:
 			geo.Type = ""
 			geo.Coordinates = nil
@@ -100,7 +99,7 @@ func (geo *Geometry) UnmarshalJSON(b []byte) error {
 }
 
 type GeoType interface {
-    GetType() string
+	GetType() string
 }
 
 type Point [2]float64
@@ -115,7 +114,7 @@ func (p LineString) GetType() string {
 	return string(TLineString)
 }
 
-type Polygon [][][2]float64 
+type Polygon [][][2]float64
 
 func (p Polygon) GetType() string {
 	return string(TPolygon)
