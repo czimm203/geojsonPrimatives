@@ -1,9 +1,8 @@
-package primative_test
+package geometry_test
 
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -20,12 +19,7 @@ func loadJson() ([]byte, error) {
 
 type testJson struct {
 	Type     string
-	Features []feature
-}
-
-type feature struct {
-	Type     string
-	Geometry primative.Geometry
+	Features []geometry.Feature
 }
 
 func TestGeoJson(t *testing.T) {
@@ -33,21 +27,50 @@ func TestGeoJson(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
 	// thing := make(map[string]interface{})
 	var thing testJson
-
 	err = json.Unmarshal(data, &thing)
 	if err != nil {
 		t.Error(err)
 	}
 
 	fmt.Printf("%+v\n", thing)
+	js, err := json.MarshalIndent(thing, "", "  ")
+	if err != nil {
+		t.Error(err)
+	}
+	os.WriteFile("./out.json", js, 0644)
+}
+
+func TestGeometryPoint(t *testing.T) {
+    p := geometry.Point{2.0,2.0}
+    g := geometry.Geometry{Type: "Polygon", Coordinates: p}
+    t.Logf("%+v\n",g.Point())
+}
+
+func TestGeoJsonMap(t *testing.T) {
+    type testMap struct {
+        Type string
+        Features []geometry.RawGeoJson
+    }
+	data, err := loadJson()
+	if err != nil {
+		t.Error(err)
+	}
+	// thing := make(map[string]interface{})
+	var thing testMap
+	err = json.Unmarshal(data, &thing)
+	if err != nil {
+		t.Error(err)
+	}
+    if thing.Features[0].GetType() != "Feature" {
+        t.Errorf("Failed to parse RawGeoJson: %+v", thing)
+    }
 
 	js, err := json.MarshalIndent(thing, "", "  ")
 	if err != nil {
 		t.Error(err)
 	}
+	os.WriteFile("./out.json", js, 0644)
 
-	ioutil.WriteFile("./out.json", js, 0644)
 }
