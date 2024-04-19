@@ -2,7 +2,6 @@ package geometry_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"testing"
 
@@ -27,14 +26,12 @@ func TestGeoJson(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	// thing := make(map[string]interface{})
 	var thing testJson
 	err = json.Unmarshal(data, &thing)
 	if err != nil {
 		t.Error(err)
 	}
 
-	fmt.Printf("%+v\n", thing)
 	js, err := json.MarshalIndent(thing, "", "  ")
 	if err != nil {
 		t.Error(err)
@@ -43,34 +40,31 @@ func TestGeoJson(t *testing.T) {
 }
 
 func TestGeometryPoint(t *testing.T) {
-    p := geometry.Point{2.0,2.0}
-    g := geometry.Geometry{Type: "Polygon", Coordinates: p}
-    t.Logf("%+v\n",g.Point())
+	p := geometry.Point{2.0, 2.0}
+	_ = geometry.Geometry{Type: "Polygon", Coordinates: p}
 }
 
-func TestGeoJsonMap(t *testing.T) {
-    type testMap struct {
-        Type string
-        Features []geometry.RawGeoJson
-    }
-	data, err := loadJson()
+func TestGeometryCollection(t *testing.T) {
+	type GCFeat struct {
+		Type     string `json:"type"`
+		Geometry struct {
+			Type       string                      `json:"type"`
+			Geometries geometry.GeometryCollection `json:"geometries"`
+		} `json:"geometry"`
+	}
+	raw, err := os.ReadFile("./test/SCC053.json")
 	if err != nil {
 		t.Error(err)
 	}
-	// thing := make(map[string]interface{})
-	var thing testMap
-	err = json.Unmarshal(data, &thing)
+	var feat geometry.Feature
+	err = json.Unmarshal(raw, &feat)
 	if err != nil {
 		t.Error(err)
 	}
-    if thing.Features[0].GetType() != "Feature" {
-        t.Errorf("Failed to parse RawGeoJson: %+v", thing)
+    for _, f := range feat.Geometry.Geometries {
+        t.Logf("%+v", f.MultiPolygon())
     }
 
-	js, err := json.MarshalIndent(thing, "", "  ")
-	if err != nil {
-		t.Error(err)
-	}
-	os.WriteFile("./out.json", js, 0644)
-
+    raw2, err := json.MarshalIndent(feat,"","    ")
+    os.WriteFile("./out2.json", raw2, 0644)
 }

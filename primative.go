@@ -7,28 +7,26 @@ import (
 type GeometryType string
 
 const (
-	TPoint           GeometryType = "Point"
-	TLineString      GeometryType = "LineString"
-	TPolygon         GeometryType = "Polygon"
-	TMultiPoint      GeometryType = "MultiPointPoint"
-	TMultiLineString GeometryType = "MultiLineString"
-	TMultiPolygon    GeometryType = "MultiPolygon"
+	TPoint             GeometryType = "Point"
+	TLineString        GeometryType = "LineString"
+	TPolygon           GeometryType = "Polygon"
+	TMultiPoint        GeometryType = "MultiPointPoint"
+	TMultiLineString   GeometryType = "MultiLineString"
+	TMultiPolygon      GeometryType = "MultiPolygon"
+	TGeomtryCollection GeometryType = "GeometryCollection"
 )
 
 type Geometry struct {
-	Type        GeometryType `json:"type"`
-	Coordinates GeoType      `json:"coordinates"`
-	BBox        []float64    `json:"bbox,omitempty"`
-	CCRS        string       `json:"ccrs,omitempty"`
+	Type        GeometryType       `json:"type"`
+	Coordinates GeoType            `json:"coordinates,omitempty"`
+	Geometries  GeometryCollection `json:"geometries,omitempty"`
+	BBox        []float64          `json:"bbox,omitempty"`
+	CCRS        string             `json:"ccrs,omitempty"`
 }
 
 type Feature struct {
 	Type     GeometryType `json:"type"`
 	Geometry Geometry     `json:"geometry"`
-	// BBox        []float64    `json:"bbox,omitempty"`
-	// CCRS        string       `json:"ccrs,omitempty"`
-	// Geometry    Geometry     `json:"geometry,omitempty"`
-	// CCRS        string       `json:"ccrs,omitempty"`
 }
 
 func (geo *Geometry) UnmarshalJSON(b []byte) error {
@@ -99,6 +97,15 @@ func (geo *Geometry) UnmarshalJSON(b []byte) error {
 			geo.Type = "MultiPolygon"
 			geo.Coordinates = ph
 
+		case "GeometryCollection":
+			var ph GeometryCollection
+			err = json.Unmarshal(*objMap["geometries"], &ph)
+			if err != nil {
+				return err
+			}
+			geo.Type = "GeometryCollection"
+			geo.Geometries = ph
+
 		default:
 			geo.Type = ""
 			geo.Coordinates = nil
@@ -107,65 +114,36 @@ func (geo *Geometry) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type RawGeoJson map[string]interface{}
-
-func (gj RawGeoJson) GetType() string {
-    return gj["type"].(string)
-}
-func (g RawGeoJson)Point() Point {
-    return g["coordinates"].(Point)
-}
-
-func (g RawGeoJson)LineString() LineString {
-    return g["coordinates"].(LineString)
-}
-
-func (g RawGeoJson)Polygon() Polygon {
-    return g["coordinates"].(Polygon)
-}
-
-func (g RawGeoJson)MultiPoint() MultiPoint {
-    return g["coordinates"].(MultiPoint)
-}
-
-func (g RawGeoJson)MultiLineString() MultiLineString{
-    return g["coordinates"].(MultiLineString)
-}
-
-func (g RawGeoJson)MultiPolygon() MultiPolygon{
-    return g["coordinates"].(MultiPolygon)
-}
-
-func (g RawGeoJson)GeometryCollection() GeometryCollection{
-    return g["geometries"].(GeometryCollection)
-}
-
 type GeoType interface {
 	GetType() string
 }
 
-func (g Geometry)Point() Point {
-    return g.Coordinates.(Point)
+func (g Geometry) GetType() string {
+	return string(g.Type)
 }
 
-func (g Geometry)LineString() LineString {
-    return g.Coordinates.(LineString)
+func (g Geometry) Point() Point {
+	return g.Coordinates.(Point)
 }
 
-func (g Geometry)Polygon() Polygon {
-    return g.Coordinates.(Polygon)
+func (g Geometry) LineString() LineString {
+	return g.Coordinates.(LineString)
 }
 
-func (g Geometry)MultiPoint() MultiPoint {
-    return g.Coordinates.(MultiPoint)
+func (g Geometry) Polygon() Polygon {
+	return g.Coordinates.(Polygon)
 }
 
-func (g Geometry)MultiLineString() MultiLineString{
-    return g.Coordinates.(MultiLineString)
+func (g Geometry) MultiPoint() MultiPoint {
+	return g.Coordinates.(MultiPoint)
 }
 
-func (g Geometry)MultiPolygon() MultiPolygon{
-    return g.Coordinates.(MultiPolygon)
+func (g Geometry) MultiLineString() MultiLineString {
+	return g.Coordinates.(MultiLineString)
+}
+
+func (g Geometry) MultiPolygon() MultiPolygon {
+	return g.Coordinates.(MultiPolygon)
 }
 
 type Point [2]float64
@@ -210,4 +188,66 @@ func (p GeometryCollection) GetType() string {
 	return "GeometryCollection"
 }
 
+type RawGeoJson map[string]interface{}
 
+func (gj RawGeoJson) GetType() string {
+	return gj["type"].(string)
+}
+
+func (g RawGeoJson) Point() Point {
+	return g["coordinates"].([2]float64)
+}
+
+func (g RawGeoJson) LineString() LineString {
+	return g["coordinates"].(LineString)
+}
+
+func (g RawGeoJson) Polygon() Polygon {
+	return g["coordinates"].(Polygon)
+}
+
+func (g RawGeoJson) MultiPoint() MultiPoint {
+	return g["coordinates"].(MultiPoint)
+}
+
+func (g RawGeoJson) MultiLineString() MultiLineString {
+	return g["coordinates"].(MultiLineString)
+}
+
+func (g RawGeoJson) MultiPolygon() MultiPolygon {
+	return g["coordinates"].(MultiPolygon)
+}
+
+func (g RawGeoJson) GeometryCollection() GeometryCollection {
+	return g["geometries"].(GeometryCollection)
+}
+
+func (g RawGeoJson) Feature() Feature {
+	geo := g["geometry"].(map[string]interface{})
+	return Feature{
+		Type:     "Feature",
+		Geometry: RawGeoJson(geo).ToGeometry(),
+	}
+}
+
+func (g RawGeoJson) ToGeometry() Geometry {
+	switch g.GetType() {
+	case "Point":
+		_ = g.Point()
+		return Geometry{GeometryType(g.GetType()), g.Point(), nil, nil, ""}
+	case "LineString":
+		return Geometry{GeometryType(g.GetType()), g.LineString(), nil, nil, ""}
+	case "Polygon":
+		return Geometry{GeometryType(g.GetType()), g.Polygon(), nil, nil, ""}
+	case "MultiPoint":
+		return Geometry{GeometryType(g.GetType()), g.MultiPoint(), nil, nil, ""}
+	case "MultiLineString":
+		return Geometry{GeometryType(g.GetType()), g.MultiLineString(), nil, nil, ""}
+	case "MultiPolygon":
+		return Geometry{GeometryType(g.GetType()), g.MultiPolygon(), nil, nil, ""}
+	case "GeometryCollection":
+		return Geometry{GeometryType(g.GetType()), nil, g.GeometryCollection(), nil, ""}
+	default:
+		return Geometry{}
+	}
+}
